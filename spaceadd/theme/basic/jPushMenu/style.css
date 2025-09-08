@@ -1,0 +1,39 @@
+.main {
+	width: 100%;
+	margin: 0 auto;
+	padding: 5px 5px 5px 10px;
+}
+
+.main > section {
+	text-align:center;
+}
+
+.main > section h2 {
+	font-weight: 300;
+	color: #47a3da;
+}
+
+.main > section button {
+	border: none;
+	background: #47a3da;
+	color: #fff;
+	padding: 1.5em;
+	cursor: pointer;
+	margin: 10px 0;
+	
+}
+
+.main > section button:hover {
+	background: #258ecd;
+}
+
+.main > section button.active {
+	background: #0d77b6;
+}
+
+.main > section button.disabled {
+	background: #aaa;
+	pointer-events: none;
+}
+
+
