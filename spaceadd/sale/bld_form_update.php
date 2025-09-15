@@ -4,7 +4,6 @@ $sub_menu = "100600";
 include_once('./_common.php');
 
 $jsonInput  = json_decode(file_get_contents('php://input') ,  true );
-
 $bigo = str_replace( '\'', '"' , $jsonInput['bigo']) ;
 
 $sql_common = "
@@ -30,30 +29,50 @@ $sql_common = "
 , disable_cnt  = '{$jsonInput['disable_cnt']}'
 , ins_cnt  = '{$jsonInput['ins_cnt']}' 
 , ins_sec  = '{$jsonInput['ins_sec']}'
-, use_st_dt  = '{$jsonInput['use_st_dt']}'
-, use_ed_dt  = '{$jsonInput['use_ed_dt']}'
+, use_st_dt  = replace('{$jsonInput['use_st_dt']}', '-','') 
+, use_ed_dt  = replace('{$jsonInput['use_ed_dt']}', '-','')
 , excpt_item  = '{$jsonInput['excpt_item']}'
 , use_yn  = '{$jsonInput['use_yn']}' 
 , bld_mda_type  = '{$jsonInput['bld_mda_type']}' 
 , bigo  = '{$bigo}'   
 ";
 
+//빌딩일련번호 중복 체크
+function fn_checkBldNum($bld_seq = "", $bld_num = ""){
+    $sql_ck = "  SELECT count(*) cnt 
+                 FROM tb_bld 
+                 where bld_num  = '{$bld_num}'
+                   and del_yn = 'N'
+              " ;
+     if( !(empty($bld_seq )  ||  $bld_seq  == ""  )) {
+         $sql_ck = $sql_ck ." and bld_seq != {$bld_seq}   " ;
+     }
+    $result = sql_fetch($sql_ck ) ;
+    return $result['cnt'];
+}
 
 
 $bld_seq = $jsonInput['bld_seq'] ;
 $sql = "";
-if(empty($bld_seq)  ||  $bld_seq == ""  ) {
-    $sql =" insert into tb_bld
-            set   entr_dt=now()
-             , entr_prsn ='{$member['mb_no']}' 
-             , {$sql_common} "  ;
+$err = "" ;
+$errFlag = ""  ;
 
-    $result = sql_query($sql );
-    if($result)  $last_seq_no = sql_insert_id();
-    $value = array('bld_seq'=>$last_seq_no);
+if(empty($bld_seq)  ||  $bld_seq == ""  ) {
+    $chk = fn_checkBldNum( "",  $jsonInput['bld_num'] )  ;
+    if( $chk > 0 ){
+        $errFlag="Y"  ;
+        $err="빌딩번호가 중복되었습니다. "   ;
+    }else{
+        $sql =" insert into tb_bld
+                set   entr_dt=now()
+                 , entr_prsn ='{$member['mb_no']}' 
+                 , {$sql_common} "  ;
+
+        $result = sql_query($sql );
+        if($result)  $last_seq_no = sql_insert_id();
+        $value = array('bld_seq'=>$last_seq_no);
+    }
 }else{
-    $err = "" ;
-    $errFlag = ""  ;
 
     $sql_update =  " update tb_bld  
             set  updt_dt = now()
@@ -62,9 +81,15 @@ if(empty($bld_seq)  ||  $bld_seq == ""  ) {
     switch ( $jsonInput['submissionId'] ) {
         //수정
         case "subForm":
-            $sql = $sql_update . "
-                 , {$sql_common} 
-                  where bld_seq = {$bld_seq}   ";
+            $chk = fn_checkBldNum( $bld_seq,  $jsonInput['bld_num'] )  ;
+            if( $chk > 0 ){
+                $errFlag="Y"  ;
+                $err="빌딩번호가 중복되었습니다. "   ;
+            }else{
+                $sql = $sql_update . "
+                     , {$sql_common} 
+                      where bld_seq = {$bld_seq}   ";
+            }
             break;
         //삭제
         case "subDel":
@@ -76,7 +101,12 @@ if(empty($bld_seq)  ||  $bld_seq == ""  ) {
 
     $result = sql_query($sql );
     $value = array('bld_seq'=>$bld_seq );
+}
 
-} 
-echo json_encode($value);
+if($errFlag  == "" ){
+    echo json_encode($value);
+}else{
+    $err  =  array('ERRMSG'=>$err, 'bld_seq' => $bld_seq );
+    echo json_encode($err);
+}
 ?>

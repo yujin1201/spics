@@ -85,7 +85,7 @@ if (isset($_GET['search_str']) && $_GET['search_str'] != ""  ) {
         $sql .= "and {$_GET['sfl']}  like '%{$_GET['search_str']}%' ";
     }
 }
-$sql .= " order by bld_seq ,bld_nm desc ";
+$sql .= " order by bld_seq  desc  ,bld_nm desc ";
 
 $result = sql_query_json($sql); //질의. 
 echo $result ;
